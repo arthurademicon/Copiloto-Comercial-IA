@@ -1,0 +1,1618 @@
+{
+  "generatedAt": "2026-09-23T13:41:35.054Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "user_profiles",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["consultor", "gestor", "admin"]
+        },
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autonomy_mode",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["copilot", "copilot_automations", "autonomous_followup"]
+        },
+        {
+          "name": "business_hours",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "whatsapp_connected",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "google_calendar_connected",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "commercial_labels",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_user_profiles_user ON user_profiles (user)"]
+    },
+    {
+      "name": "whatsapp_instances",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "instance_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["disconnected", "connecting", "connected", "error"]
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "provider_instance_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_demo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_wainstances_user ON whatsapp_instances (user)",
+        "CREATE INDEX idx_wainstances_status ON whatsapp_instances (status)"
+      ]
+    },
+    {
+      "name": "commercial_labels",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_labels_name ON commercial_labels (name)"]
+    },
+    {
+      "name": "contacts",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "whatsapp_instance",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "whatsapp_instances"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "profile",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["lead", "customer", "partner", "nutrition"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_contacts_consultant ON contacts (consultant)",
+        "CREATE INDEX idx_contacts_phone ON contacts (phone)"
+      ]
+    },
+    {
+      "name": "conversations",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "whatsapp_instance",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "whatsapp_instances"
+        },
+        {
+          "name": "commercial_stage",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "novo",
+            "qualificacao",
+            "oportunidade",
+            "reuniao",
+            "proposta",
+            "negociacao",
+            "fechado",
+            "perdido"
+          ]
+        },
+        {
+          "name": "temperature",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["fria", "morna", "quente"]
+        },
+        {
+          "name": "potential_value",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "product_interest",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "objective",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "urgency",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pain_point",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "motivation",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "objections",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "risk_signals",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "next_best_action",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "next_action_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "last_interaction_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "probability",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pending_items",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_scheduled",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_result",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_conv_consultant ON conversations (consultant)",
+        "CREATE INDEX idx_conv_stage ON conversations (commercial_stage)",
+        "CREATE INDEX idx_conv_last_inter ON conversations (last_interaction_at)",
+        "CREATE INDEX idx_conv_next_act ON conversations (next_action_date)"
+      ]
+    },
+    {
+      "name": "conversation_labels",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "label",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "commercial_labels"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_conv_labels_conv ON conversation_labels (conversation)"]
+    },
+    {
+      "name": "messages",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "whatsapp_instance",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "whatsapp_instances"
+        },
+        {
+          "name": "direction",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["inbound", "outbound"]
+        },
+        {
+          "name": "message_type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "timestamp",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "provider_event_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "metadata",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_messages_provider_id ON messages (provider_event_id)",
+        "CREATE INDEX idx_messages_conv ON messages (conversation)",
+        "CREATE INDEX idx_messages_timestamp ON messages (timestamp)"
+      ]
+    },
+    {
+      "name": "opportunities",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "stage",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "novo",
+            "qualificacao",
+            "oportunidade",
+            "reuniao",
+            "proposta",
+            "negociacao",
+            "fechado",
+            "perdido"
+          ]
+        },
+        {
+          "name": "potential_value",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "product_interest",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["open", "won", "lost", "stalled"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_opp_consultant ON opportunities (consultant)",
+        "CREATE INDEX idx_opp_stage ON opportunities (stage)",
+        "CREATE INDEX idx_opp_status ON opportunities (status)"
+      ]
+    },
+    {
+      "name": "opportunity_events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "opportunity",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "opportunities"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_opp_events_opp ON opportunity_events (opportunity)"]
+    },
+    {
+      "name": "ai_suggestions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "discovery_question",
+            "handle_objection",
+            "explain_concept",
+            "advance_to_meeting",
+            "create_followup",
+            "create_task",
+            "wait_for_customer",
+            "send_content",
+            "request_document",
+            "escalate_to_manager",
+            "technical_validation",
+            "close_opportunity",
+            "reactivate_opportunity"
+          ]
+        },
+        {
+          "name": "commercial_stage",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "novo",
+            "qualificacao",
+            "oportunidade",
+            "reuniao",
+            "proposta",
+            "negociacao",
+            "fechado",
+            "perdido"
+          ]
+        },
+        {
+          "name": "customer_intent",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "objections",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "purchase_signals",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "risk_signals",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "next_best_action",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "follow_up_required",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "follow_up_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_recommended",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "technical_review_required",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "suggested_response",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "confidence",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "reasoning_summary",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "accepted", "edited", "ignored", "deferred"]
+        },
+        {
+          "name": "feedback",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "suggestion_source",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["ai", "manual"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_ai_sugg_consultant ON ai_suggestions (consultant)",
+        "CREATE INDEX idx_ai_sugg_conv ON ai_suggestions (conversation)",
+        "CREATE INDEX idx_ai_sugg_status ON ai_suggestions (status)",
+        "CREATE INDEX idx_ai_sugg_created ON ai_suggestions (created DESC)"
+      ]
+    },
+    {
+      "name": "followups",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "opportunity",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "opportunities"
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "scheduled_date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "scheduled",
+            "pending_approval",
+            "approved",
+            "sent",
+            "cancelled",
+            "rescheduled"
+          ]
+        },
+        {
+          "name": "suggested_text",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "is_automatic",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "source_ai_suggestion",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "ai_suggestions"
+        },
+        {
+          "name": "sent_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cancelled_reason",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_followups_consultant ON followups (consultant)",
+        "CREATE INDEX idx_followups_status ON followups (status)",
+        "CREATE INDEX idx_followups_sched ON followups (scheduled_date)"
+      ]
+    },
+    {
+      "name": "tasks",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["open", "done", "cancelled"]
+        },
+        {
+          "name": "source",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["manual", "ai"]
+        },
+        {
+          "name": "source_ai_suggestion",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "ai_suggestions"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_tasks_consultant ON tasks (consultant)",
+        "CREATE INDEX idx_tasks_status ON tasks (status)"
+      ]
+    },
+    {
+      "name": "calendar_connections",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "is_connected",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "provider_account_email",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_demo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_cal_conn_user ON calendar_connections (user)"]
+    },
+    {
+      "name": "calendar_events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && consultant = @request.auth.id",
+        "view": "@request.auth.id != '' && consultant = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && consultant = @request.auth.id",
+        "delete": "@request.auth.id != '' && consultant = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conversation",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "conversations"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "opportunity",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "opportunities"
+        },
+        {
+          "name": "calendar_connection",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "calendar_connections"
+        },
+        {
+          "name": "provider_event_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "meeting_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["scheduled", "done", "cancelled"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_cal_events_consultant ON calendar_events (consultant)",
+        "CREATE INDEX idx_cal_events_date ON calendar_events (date)"
+      ]
+    },
+    {
+      "name": "knowledge_documents",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "responsible",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "published_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["approved", "not_approved"]
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "content_embedding",
+          "type": "vector",
+          "required": false,
+          "system": false,
+          "vectorDimensions": 1536,
+          "vectorDistance": "l2"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_kdocs_status ON knowledge_documents (status)"]
+    },
+    {
+      "name": "integration_events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["received", "processed", "error"]
+        },
+        {
+          "name": "payload",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "error_message",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "idempotency_key",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_integ_events_status ON integration_events (status)",
+        "CREATE INDEX idx_integ_events_type ON integration_events (type)"
+      ]
+    },
+    {
+      "name": "audit_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "entity_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entity_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "details",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_audit_user ON audit_logs (user)",
+        "CREATE INDEX idx_audit_created ON audit_logs (created DESC)"
+      ]
+    },
+    {
+      "name": "usage_metrics",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "metric",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "metadata",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_metrics_metric ON usage_metrics (metric)",
+        "CREATE INDEX idx_metrics_created ON usage_metrics (created DESC)"
+      ]
+    }
+  ]
+}
