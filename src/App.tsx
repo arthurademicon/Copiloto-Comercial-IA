@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from './services/authContext'
 import Index from './pages/Index'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -27,34 +28,36 @@ import Onboarding from './pages/Onboarding'
 
 const App = () => (
   <BrowserRouter>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        {/* Auth & Onboarding */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          {/* Auth & Onboarding */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Protected App Routes inside Layout */}
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          <Route path="/conversas" element={<Conversas />} />
-          <Route path="/pipeline" element={<Pipeline />} />
-          <Route path="/followups" element={<Followups />} />
-          <Route path="/agenda" element={<Agenda />} />
-          <Route path="/copiloto" element={<Copiloto />} />
-          <Route path="/conhecimento" element={<Conhecimento />} />
-          <Route path="/relatorios" element={<Relatorios />} />
-          <Route path="/equipe" element={<Equipe />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+          {/* Protected App Routes inside Layout */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/conversas" element={<Conversas />} />
+            <Route path="/pipeline" element={<Pipeline />} />
+            <Route path="/followups" element={<Followups />} />
+            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/copiloto" element={<Copiloto />} />
+            <Route path="/conhecimento" element={<Conhecimento />} />
+            <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/equipe" element={<Equipe />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 
