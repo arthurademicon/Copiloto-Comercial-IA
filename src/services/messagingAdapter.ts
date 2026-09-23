@@ -216,7 +216,7 @@ const DEMO_SCRIPTS = [
   'Bom dia! Gostei muito da projeção. Se fecharmos hoje, em quanto tempo participo da primeira assembleia?',
 ]
 
-let simulatorTimer: NodeJS.Timeout | null = null
+let simulatorTimer: ReturnType<typeof setInterval> | null = null
 
 export function startDemoSimulator() {
   if (simulatorTimer) return

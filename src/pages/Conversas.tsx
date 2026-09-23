@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Search,
   Sparkles,
@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils'
 
 export default function Conversas() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeConvIdFromUrl = searchParams.get('conversation')
   const shouldOpenScheduleModal = searchParams.get('action') === 'schedule'
@@ -75,33 +76,27 @@ export default function Conversas() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Realtime subscription on messages, ai_suggestions, conversations
-  useRealtime({
-    collection: 'messages',
-    onRecord: (record) => {
-      const newMsg = record as Message
-      if (activeConv && newMsg.conversation === activeConv.id) {
-        setMessages((prev) => {
-          if (
-            prev.some((m) => m.id === newMsg.id || m.provider_event_id === newMsg.provider_event_id)
-          ) {
-            return prev
-          }
-          return [...prev, newMsg]
-        })
-      }
-      // Update list preview
-      loadConversations()
-    },
+  useRealtime('messages', (event) => {
+    const newMsg = event.record as unknown as Message
+    if (activeConv && newMsg.conversation === activeConv.id) {
+      setMessages((prev) => {
+        if (
+          prev.some((m) => m.id === newMsg.id || m.provider_event_id === newMsg.provider_event_id)
+        ) {
+          return prev
+        }
+        return [...prev, newMsg]
+      })
+    }
+    // Update list preview
+    loadConversations()
   })
 
-  useRealtime({
-    collection: 'ai_suggestions',
-    onRecord: (record) => {
-      const newSugg = record as AiSuggestion
-      if (activeConv && newSugg.conversation === activeConv.id) {
-        setSuggestions((prev) => [newSugg, ...prev.filter((s) => s.id !== newSugg.id)])
-      }
-    },
+  useRealtime('ai_suggestions', (event) => {
+    const newSugg = event.record as unknown as AiSuggestion
+    if (activeConv && newSugg.conversation === activeConv.id) {
+      setSuggestions((prev) => [newSugg, ...prev.filter((s) => s.id !== newSugg.id)])
+    }
   })
 
   // Load conversations

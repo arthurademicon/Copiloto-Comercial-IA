@@ -31,7 +31,9 @@ export default function Followups() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [followups, setFollowups] = useState<Followup[]>([])
-  const [activeTab, setActiveTab] = useState<'vencidos' | 'hoje' | 'esta_semana' | 'futuros' | 'automaticos' | 'aguardando'>('vencidos')
+  const [activeTab, setActiveTab] = useState<
+    'vencidos' | 'hoje' | 'esta_semana' | 'futuros' | 'automaticos' | 'aguardando'
+  >('vencidos')
 
   // Edit / Reschedule Modal state
   const [selectedFollowup, setSelectedFollowup] = useState<Followup | null>(null)
@@ -64,10 +66,7 @@ export default function Followups() {
     if (activeTab === 'automaticos') return fu.is_automatic
     if (activeTab === 'vencidos') return fu.status === 'scheduled' && sched < now
     if (activeTab === 'hoje') {
-      return (
-        fu.status === 'scheduled' &&
-        sched.toDateString() === now.toDateString()
-      )
+      return fu.status === 'scheduled' && sched.toDateString() === now.toDateString()
     }
     if (activeTab === 'esta_semana') {
       const in7Days = new Date(now.getTime() + 7 * 86400000)
@@ -116,7 +115,10 @@ export default function Followups() {
         await copilotService.updateFollowupStatus(selectedFollowup.id, 'approved')
         toast({ title: 'Texto do follow-up atualizado!' })
       } else if (modalMode === 'reschedule') {
-        await copilotService.rescheduleFollowup(selectedFollowup.id, new Date(newDate).toISOString())
+        await copilotService.rescheduleFollowup(
+          selectedFollowup.id,
+          new Date(newDate).toISOString(),
+        )
         toast({ title: 'Follow-up remarcado com sucesso!' })
       } else if (modalMode === 'cancel') {
         await copilotService.updateFollowupStatus(selectedFollowup.id, 'cancelled', cancelReason)
@@ -141,9 +143,12 @@ export default function Followups() {
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#111827]">Central de Follow-ups Inteligentes</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#111827]">
+          Central de Follow-ups Inteligentes
+        </h1>
         <p className="text-xs text-[#6B7280] mt-1">
-          A IA nunca programa contatos genéricos. Cada follow-up possui um Por Quê, Quando e o Que dizer fundamentados na relação comercial.
+          A IA nunca programa contatos genéricos. Cada follow-up possui um Por Quê, Quando e o Que
+          dizer fundamentados na relação comercial.
         </p>
       </div>
 
@@ -164,7 +169,7 @@ export default function Followups() {
               'px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap',
               activeTab === tab.id
                 ? 'bg-[#EEF2FF] text-[#4F46E5] font-semibold border border-indigo-200'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-100'
+                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-100',
             )}
           >
             {tab.label}
@@ -201,7 +206,10 @@ export default function Followups() {
                       Data agendada:{' '}
                       <strong className={cn(isOverdue ? 'text-[#EF4444]' : 'text-[#111827]')}>
                         {schedDate.toLocaleDateString('pt-BR')} às{' '}
-                        {schedDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        {schedDate.toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </strong>
                     </p>
                   </div>
@@ -209,7 +217,10 @@ export default function Followups() {
 
                 <div className="flex items-center gap-2">
                   {fu.is_automatic && (
-                    <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] bg-purple-50 text-purple-700 border-purple-200"
+                    >
                       Envio Autônomo
                     </Badge>
                   )}
@@ -217,7 +228,9 @@ export default function Followups() {
                     variant="outline"
                     className={cn(
                       'text-[10px] capitalize',
-                      isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-50 text-[#6B7280]'
+                      isOverdue
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-slate-50 text-[#6B7280]',
                     )}
                   >
                     {isOverdue ? 'Vencido' : fu.status}
@@ -311,8 +324,8 @@ export default function Followups() {
               {modalMode === 'edit'
                 ? 'Editar Texto do Follow-up'
                 : modalMode === 'reschedule'
-                ? 'Remarcar Data de Retorno'
-                : 'Cancelar Follow-up'}
+                  ? 'Remarcar Data de Retorno'
+                  : 'Cancelar Follow-up'}
             </DialogTitle>
           </DialogHeader>
 
@@ -340,7 +353,9 @@ export default function Followups() {
 
             {modalMode === 'cancel' && (
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#374151]">Motivo do cancelamento:</label>
+                <label className="text-xs font-medium text-[#374151]">
+                  Motivo do cancelamento:
+                </label>
                 <input
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}

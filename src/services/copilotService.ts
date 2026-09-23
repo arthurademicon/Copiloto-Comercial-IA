@@ -193,11 +193,39 @@ export const copilotService = {
     })
   },
 
+  async updateCalendarEvent(id: string, payload: Partial<CalendarEvent>): Promise<CalendarEvent> {
+    return await pb.collection('calendar_events').update<CalendarEvent>(id, payload)
+  },
+
   // Knowledge
   async getKnowledgeDocs(): Promise<KnowledgeDocument[]> {
     return await pb.collection('knowledge_documents').getFullList<KnowledgeDocument>({
       sort: '-published_at',
     })
+  },
+
+  async createKnowledgeDoc(payload: Partial<KnowledgeDocument>): Promise<KnowledgeDocument> {
+    return await pb.collection('knowledge_documents').create<KnowledgeDocument>({
+      title: payload.title || 'Novo Documento',
+      category: payload.category || 'Geral',
+      version: payload.version || 'v1.0',
+      responsible: payload.responsible || 'Supervisão Comercial',
+      published_at: payload.published_at || new Date().toISOString(),
+      status: payload.status || 'not_approved',
+      content: payload.content || '',
+      valid_until: payload.valid_until,
+    })
+  },
+
+  async updateKnowledgeDoc(
+    id: string,
+    payload: Partial<KnowledgeDocument>,
+  ): Promise<KnowledgeDocument> {
+    return await pb.collection('knowledge_documents').update<KnowledgeDocument>(id, payload)
+  },
+
+  async deleteKnowledgeDoc(id: string): Promise<boolean> {
+    return await pb.collection('knowledge_documents').delete(id)
   },
 
   // Labels
