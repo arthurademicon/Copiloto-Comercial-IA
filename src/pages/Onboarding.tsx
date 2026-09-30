@@ -25,10 +25,13 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
 
-  // Step 2 WA states: 'idle' | 'connecting' | 'connected'
-  const [waState, setWaState] = useState<'idle' | 'connecting' | 'connected'>(
-    profile?.whatsapp_connected ? 'connected' : 'idle',
-  )
+  // Step 2 WA states: 'idle' | 'connecting' | 'waiting_qr' | 'connected' | 'error'
+  const [waState, setWaState] = useState<
+    'idle' | 'connecting' | 'waiting_qr' | 'connected' | 'error'
+  >(profile?.whatsapp_connected ? 'connected' : 'idle')
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null)
+  const [waErrorMessage, setWaErrorMessage] = useState<string>('')
+  const [isRealEvolution, setIsRealEvolution] = useState(false)
 
   // Step 3 Google Calendar states: 'idle' | 'connecting' | 'connected'
   const [calendarConnected, setCalendarConnected] = useState(
@@ -53,22 +56,44 @@ export default function Onboarding() {
   >('copilot_automations')
   const [isFinishing, setIsFinishing] = useState(false)
 
-  // Handle WA connection simulation
+  // Handle WA connection (Real Evolution QR Code or Demo)
   const handleConnectWhatsApp = async () => {
     if (!user) return
     setWaState('connecting')
+    setWaErrorMessage('')
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1800))
-      await messagingAdapter.connectInstance(user.id)
-      await refreshWhatsapp()
-      await refreshProfile()
-      setWaState('connected')
-      toast({
-        title: 'WhatsApp Conectado com sucesso!',
-        description: 'Instância em modo demonstração pronta para operar.',
-      })
-    } catch {
-      setWaState('idle')
+      const res = await messagingAdapter.connectInstance(user.id)
+      setIsRealEvolution(!res.is_demo)
+
+      if (res.status === 'connected') {
+        setWaState('connected')
+        await refreshWhatsapp()
+        await refreshProfile()
+        toast({
+          title: 'WhatsApp Conectado com sucesso!',
+          description: res.is_demo
+            ? 'Instância em modo demonstração pronta para operar.'
+            : 'Sessão WhatsApp autenticada com sucesso na Evolution API!',
+        })
+      } else if (res.status === 'waiting_qr' && res.qrcode) {
+        setQrCodeData(res.qrcode)
+        setWaState('waiting_qr')
+        toast({
+          title: 'QR Code Gerado',
+          description: 'Abra o WhatsApp no celular e escaneie o código abaixo.',
+        })
+      } else if (res.status === 'error') {
+        setWaState('error')
+        setWaErrorMessage(res.error || 'Erro de autenticação na Evolution API')
+      } else {
+        // Fallback connecting
+        setWaState('connected')
+        await refreshWhatsapp()
+        await refreshProfile()
+      }
+    } catch (err: unknown) {
+      setWaState('error')
+      setWaErrorMessage(err instanceof Error ? err.message : 'Falha ao conectar')
       toast({
         title: 'Erro ao conectar WhatsApp',
         variant: 'destructive',
@@ -253,8 +278,78 @@ export default function Onboarding() {
                   <Loader2 className="w-8 h-8 text-[#4F46E5] animate-spin mx-auto" />
                   <h3 className="text-sm font-semibold text-[#111827]">Conectando...</h3>
                   <p className="text-xs text-[#6B7280]">
-                    Inicializando camada Messaging Provider Adapter (Demo)...
+                    Inicializando camada Messaging Provider Adapter...
                   </p>
+                </div>
+              )}
+
+              {waState === 'waiting_qr' && (
+                <div className="py-3 space-y-4">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#4F46E5] flex items-center justify-center mx-auto">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#111827]">
+                      Escaneie o QR Code no WhatsApp
+                    </h3>
+                    <p className="text-xs text-[#6B7280] mt-1 max-w-sm mx-auto">
+                      Abra o WhatsApp no celular &gt; Dispositivos Conectados &gt; Conectar um
+                      aparelho.
+                    </p>
+                  </div>
+                  {qrCodeData && (
+                    <div className="bg-white p-3 rounded-2xl border border-[#E5E7EB] inline-block shadow-sm">
+                      <img
+                        src={
+                          qrCodeData.startsWith('data:')
+                            ? qrCodeData
+                            : `data:image/png;base64,${qrCodeData}`
+                        }
+                        alt="QR Code Evolution WhatsApp"
+                        className="w-48 h-48 mx-auto object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="pt-2 flex justify-center gap-3">
+                    <Button
+                      onClick={handleConnectWhatsApp}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      <Loader2 className="w-3.5 h-3.5 mr-1" /> Atualizar QR Code
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        setWaState('connected')
+                        await refreshWhatsapp()
+                        await refreshProfile()
+                      }}
+                      size="sm"
+                      className="bg-[#10B981] hover:bg-[#059669] text-white text-xs"
+                    >
+                      Já escaneei
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {waState === 'error' && (
+                <div className="py-3 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-rose-100 text-[#EF4444] flex items-center justify-center mx-auto">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#EF4444]">Erro de autenticação</h3>
+                  <p className="text-xs text-[#6B7280] max-w-md mx-auto">
+                    {waErrorMessage || 'Não foi possível autenticar a sessão do WhatsApp.'}
+                  </p>
+                  <Button
+                    onClick={handleConnectWhatsApp}
+                    variant="outline"
+                    className="text-xs mt-2"
+                  >
+                    Tentar Novamente
+                  </Button>
                 </div>
               )}
 
@@ -263,7 +358,11 @@ export default function Onboarding() {
                   <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#10B981] flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
-                  <h3 className="text-sm font-semibold text-[#10B981]">WhatsApp conectado!</h3>
+                  <h3 className="text-sm font-semibold text-[#10B981]">
+                    {isRealEvolution
+                      ? 'WhatsApp Conectado (Evolution API)'
+                      : 'WhatsApp Conectado (Modo Demo)'}
+                  </h3>
                   <p className="text-xs text-[#6B7280]">
                     Instância ativa e pronta para ingerir conversas e gerar sugestões em tempo real.
                   </p>

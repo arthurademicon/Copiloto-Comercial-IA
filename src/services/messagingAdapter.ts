@@ -1,10 +1,31 @@
-import type { Contact, Conversation, Message, WhatsappInstance, WhatsappStatus } from '@/types'
+import type {
+  Contact,
+  Conversation,
+  Message,
+  WhatsappInstance,
+  WhatsappStatus,
+  EvolutionConfigStatus,
+} from '@/types'
 import pb from '@/lib/pocketbase/client'
 
+export interface ConnectResult {
+  instance: WhatsappInstance
+  qrcode?: string | null
+  status: WhatsappStatus | 'waiting_qr'
+  is_demo: boolean
+  error?: string
+}
+
 export interface MessagingProviderAdapter {
-  connectInstance(userId: string): Promise<WhatsappInstance>
+  connectInstance(userId: string): Promise<ConnectResult>
   disconnectInstance(instanceId: string): Promise<boolean>
   getConnectionStatus(instanceId: string): Promise<WhatsappStatus>
+  getProviderConfig(): Promise<EvolutionConfigStatus>
+  saveProviderConfig(data: {
+    base_url: string
+    api_key?: string
+    instance_name: string
+  }): Promise<boolean>
   receiveMessage(payload: {
     conversationId: string
     contactId: string
@@ -13,8 +34,9 @@ export interface MessagingProviderAdapter {
     metadata?: Record<string, unknown>
   }): Promise<Message>
   sendMessage(payload: {
-    conversationId: string
-    contactId: string
+    conversationId?: string
+    contactId?: string
+    phone?: string
     content: string
     metadata?: Record<string, unknown>
   }): Promise<Message>
@@ -24,21 +46,124 @@ export interface MessagingProviderAdapter {
   downloadMedia(mediaUrl: string): Promise<Blob | null>
 }
 
-class DemoProviderImpl implements MessagingProviderAdapter {
-  async connectInstance(userId: string): Promise<WhatsappInstance> {
+class PluggableMessagingAdapterImpl implements MessagingProviderAdapter {
+  async getProviderConfig(): Promise<EvolutionConfigStatus> {
     try {
-      const existing = await pb
+      const res = await fetch(
+        `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/integrations/evolution/status`,
+        {
+          headers: {
+            Authorization: pb.authStore.token,
+          },
+        },
+      )
+      if (res.ok) {
+        return (await res.json()) as EvolutionConfigStatus
+      }
+    } catch {
+      /* fallback */
+    }
+    return {
+      is_configured: false,
+      is_demo: true,
+      base_url: '',
+      instance_name: 'copiloto-ademicon',
+      api_key_masked: '',
+      has_api_key: false,
+      live_status: 'disconnected',
+      source: 'demo',
+    }
+  }
+
+  async saveProviderConfig(data: {
+    base_url: string
+    api_key?: string
+    instance_name: string
+  }): Promise<boolean> {
+    const res = await fetch(
+      `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/integrations/evolution/config`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: pb.authStore.token,
+        },
+        body: JSON.stringify(data),
+      },
+    )
+    return res.ok
+  }
+
+  async connectInstance(userId: string): Promise<ConnectResult> {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/integrations/evolution/connect`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: pb.authStore.token,
+          },
+          body: JSON.stringify({ user_id: userId }),
+        },
+      )
+
+      if (res.ok) {
+        const data = await res.json()
+        const isConnected = data.status === 'connected'
+        await this.updateProfileStatus(userId, isConnected)
+
+        let inst: WhatsappInstance
+        try {
+          inst = await pb
+            .collection('whatsapp_instances')
+            .getFirstListItem<WhatsappInstance>(`user="${userId}"`)
+        } catch {
+          inst = {
+            id: 'wa_inst_' + Date.now(),
+            user: userId,
+            instance_name: data.instance_name || 'Instância WhatsApp',
+            status: isConnected ? 'connected' : 'connecting',
+            provider: data.is_demo ? 'demo' : 'evolution_api',
+            is_demo: Boolean(data.is_demo),
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          }
+        }
+
+        return {
+          instance: inst,
+          qrcode: data.qrcode || null,
+          status: data.status,
+          is_demo: Boolean(data.is_demo),
+          error: data.error,
+        }
+      }
+    } catch {
+      /* fallback to demo below */
+    }
+
+    // Demo fallback if network or config not available
+    let existing: WhatsappInstance | null = null
+    try {
+      existing = await pb
         .collection('whatsapp_instances')
-        .getFirstListItem(`user="${userId}"`)
+        .getFirstListItem<WhatsappInstance>(`user="${userId}"`)
+    } catch {
+      /* intentionally ignored */
+    }
+
+    if (existing) {
       const updated = await pb
         .collection('whatsapp_instances')
         .update<WhatsappInstance>(existing.id, {
           status: 'connected',
           is_demo: true,
+          provider: 'demo',
         })
       await this.updateProfileStatus(userId, true)
-      return updated
-    } catch {
+      return { instance: updated, status: 'connected', is_demo: true }
+    } else {
       const created = await pb.collection('whatsapp_instances').create<WhatsappInstance>({
         user: userId,
         instance_name: 'WhatsApp Demo',
@@ -48,11 +173,26 @@ class DemoProviderImpl implements MessagingProviderAdapter {
         is_demo: true,
       })
       await this.updateProfileStatus(userId, true)
-      return created
+      return { instance: created, status: 'connected', is_demo: true }
     }
   }
 
   async disconnectInstance(instanceId: string): Promise<boolean> {
+    try {
+      await fetch(
+        `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/integrations/evolution/disconnect`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: pb.authStore.token,
+          },
+        },
+      )
+    } catch {
+      /* intentionally ignored */
+    }
+
     try {
       const inst = await pb.collection('whatsapp_instances').getOne<WhatsappInstance>(instanceId)
       await pb.collection('whatsapp_instances').update(instanceId, {
@@ -69,6 +209,10 @@ class DemoProviderImpl implements MessagingProviderAdapter {
 
   async getConnectionStatus(instanceId: string): Promise<WhatsappStatus> {
     try {
+      const cfg = await this.getProviderConfig()
+      if (cfg.is_configured && cfg.live_status) {
+        return cfg.live_status
+      }
       const inst = await pb.collection('whatsapp_instances').getOne<WhatsappInstance>(instanceId)
       return inst.status
     } catch {
@@ -87,7 +231,7 @@ class DemoProviderImpl implements MessagingProviderAdapter {
     const providerEventId =
       payload.providerEventId || `demo_in_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 
-    // Use idempotent backend hook
+    // Use idempotent backend ingest
     const res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/messages/ingest`, {
       method: 'POST',
       headers: {
@@ -105,7 +249,6 @@ class DemoProviderImpl implements MessagingProviderAdapter {
     })
 
     if (!res.ok) {
-      // Fallback direct create if hook has network glitch
       return await pb.collection('messages').create<Message>({
         consultant: userId,
         conversation: payload.conversationId,
@@ -124,46 +267,42 @@ class DemoProviderImpl implements MessagingProviderAdapter {
   }
 
   async sendMessage(payload: {
-    conversationId: string
-    contactId: string
+    conversationId?: string
+    contactId?: string
+    phone?: string
     content: string
     metadata?: Record<string, unknown>
   }): Promise<Message> {
-    const userId = pb.authStore.record?.id || ''
-    const providerEventId = `demo_out_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-
-    const res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/messages/ingest`, {
+    // Route via backend whatsapp/send hook which dynamically routes to Evolution API when configured,
+    // or falls back to demo mode gracefully
+    const res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/whatsapp/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: pb.authStore.token,
       },
-      body: JSON.stringify({
-        conversation_id: payload.conversationId,
-        contact_id: payload.contactId,
-        direction: 'outbound',
-        content: payload.content,
-        provider_event_id: providerEventId,
-        metadata: payload.metadata || {},
-      }),
+      body: JSON.stringify(payload),
     })
 
-    if (!res.ok) {
-      return await pb.collection('messages').create<Message>({
-        consultant: userId,
-        conversation: payload.conversationId,
-        contact: payload.contactId,
-        direction: 'outbound',
-        message_type: 'text',
-        content: payload.content,
-        timestamp: new Date().toISOString(),
-        provider_event_id: providerEventId,
-        metadata: payload.metadata || {},
-      })
+    if (res.ok) {
+      const data = await res.json()
+      return data.message as Message
     }
 
-    const data = await res.json()
-    return data.message as Message
+    // Direct fallback if hook offline
+    const userId = pb.authStore.record?.id || ''
+    const providerEventId = `out_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    return await pb.collection('messages').create<Message>({
+      consultant: userId,
+      conversation: payload.conversationId || '',
+      contact: payload.contactId || '',
+      direction: 'outbound',
+      message_type: 'text',
+      content: payload.content,
+      timestamp: new Date().toISOString(),
+      provider_event_id: providerEventId,
+      metadata: payload.metadata || {},
+    })
   }
 
   async getContact(contactId: string): Promise<Contact | null> {
@@ -205,11 +344,11 @@ class DemoProviderImpl implements MessagingProviderAdapter {
 }
 
 // Single adapter instance exported — the rest of the application interacts only with this
-export const messagingAdapter: MessagingProviderAdapter = new DemoProviderImpl()
+export const messagingAdapter: MessagingProviderAdapter = new PluggableMessagingAdapterImpl()
 
 // Demo Simulator: injects realistic inbound messages periodically (gated by is_demo = true)
 const DEMO_SCRIPTS = [
-  'Oi Arthur, vi o material que você mandou. Pode me explicar melhor como funciona o financiamento de imóvel na planta?',
+  'Oi Arthur, vi o material que você mandou. Pode me explicar melhor como funciona o consórcio de imóvel na planta?',
   'Ainda estou avaliando a proposta com meu sócio, te retorno depois do dia 15.',
   'Isso me interessa sim. Você teria um horário essa semana pra conversarmos com calma?',
   'Arthur, conseguimos usar o FGTS como lance embutido nesse grupo?',
@@ -221,7 +360,6 @@ let simulatorTimer: ReturnType<typeof setInterval> | null = null
 export function startDemoSimulator() {
   if (simulatorTimer) return
 
-  // Run roughly every 75 seconds
   simulatorTimer = setInterval(async () => {
     try {
       if (!pb.authStore.isValid || !pb.authStore.record) return

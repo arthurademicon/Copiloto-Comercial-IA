@@ -14,6 +14,7 @@ import Agenda from './pages/Agenda'
 import Copiloto from './pages/Copiloto'
 import Conhecimento from './pages/Conhecimento'
 import Relatorios from './pages/Relatorios'
+import Disparos from './pages/Disparos'
 import Equipe from './pages/Equipe'
 import Configuracoes from './pages/Configuracoes'
 import Login from './pages/Login'
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/copiloto" element={<Copiloto />} />
             <Route path="/conhecimento" element={<Conhecimento />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/disparos" element={<Disparos />} />
             <Route path="/equipe" element={<Equipe />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
           </Route>

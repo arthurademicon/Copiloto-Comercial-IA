@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Info,
+  Send,
 } from 'lucide-react'
 import { useAuth } from '@/services/authContext'
 import { Badge } from '@/components/ui/badge'
@@ -80,6 +81,7 @@ export default function Layout() {
     { label: 'Pipeline', path: '/pipeline', icon: Kanban },
     { label: 'Follow-ups', path: '/followups', icon: Clock },
     { label: 'Agenda', path: '/agenda', icon: Calendar },
+    { label: 'Disparos', path: '/disparos', icon: Send },
     { label: 'Copiloto', path: '/copiloto', icon: Sparkles },
     { label: 'Conhecimento', path: '/conhecimento', icon: BookOpen },
     { label: 'Relatórios', path: '/relatorios', icon: BarChart3 },
@@ -228,7 +230,11 @@ export default function Layout() {
                 )}
               />
               <span className="text-[#374151]">
-                {isWaConnected ? 'WhatsApp Demo Conectado' : 'WhatsApp Desconectado'}
+                {isWaConnected
+                  ? whatsappInstance?.provider === 'evolution_api'
+                    ? 'WhatsApp Evolution Conectado'
+                    : 'WhatsApp Demo Conectado'
+                  : 'WhatsApp Desconectado'}
               </span>
             </div>
 

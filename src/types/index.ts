@@ -66,6 +66,89 @@ export interface WhatsappInstance {
   updated: string
 }
 
+export interface EvolutionConfigStatus {
+  is_configured: boolean
+  is_demo: boolean
+  base_url: string
+  instance_name: string
+  api_key_masked: string
+  has_api_key: boolean
+  live_status: WhatsappStatus
+  instance_data?: Record<string, unknown>
+  source: 'database' | 'env' | 'demo'
+}
+
+export interface AiConfig {
+  id?: string
+  organization_id?: string
+  provider: 'skip_agent' | 'openai' | 'anthropic' | 'custom_openrouter'
+  model: string
+  temperature?: number
+  api_key?: string
+  custom_endpoint?: string
+  system_prompt_override?: string
+  is_active?: boolean
+  has_custom_key?: boolean
+}
+
+export interface BroadcastCampaign {
+  id: string
+  organization_id: string
+  consultant: string
+  title: string
+  message_template: string
+  status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'cancelled'
+  audience_filter?: {
+    category?: string
+    contact_ids?: string[]
+    stage?: string
+  }
+  total_recipients: number
+  sent_count: number
+  delivered_count: number
+  read_count: number
+  error_count: number
+  replied_count: number
+  scheduled_at?: string
+  min_interval_seconds: number
+  max_interval_seconds: number
+  requires_manual_approval: boolean
+  created: string
+  updated: string
+}
+
+export interface BroadcastRecipient {
+  id: string
+  campaign: string
+  contact: string
+  recipient_phone: string
+  recipient_name?: string
+  rendered_message: string
+  status:
+    | 'pending'
+    | 'waiting_approval'
+    | 'approved'
+    | 'sending'
+    | 'sent'
+    | 'delivered'
+    | 'read'
+    | 'error'
+    | 'cancelled'
+  provider_event_id?: string
+  error_details?: string
+  sent_at?: string
+  delivered_at?: string
+  read_at?: string
+  replied_at?: string
+  retry_count: number
+  created: string
+  updated: string
+  expand?: {
+    contact?: Contact
+    campaign?: BroadcastCampaign
+  }
+}
+
 export interface Contact {
   id: string
   consultant: string

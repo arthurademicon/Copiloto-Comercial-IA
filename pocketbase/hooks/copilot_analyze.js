@@ -1,5 +1,7 @@
-// Commercial Copilot Analyze hook — calls Skip Cloud Agent 'commercial-copilot'
+// Commercial Copilot Analyze hook — Provider-Agnostic LLM Layer
+// Uses organization's configured provider (Skip Agent native, OpenAI, Anthropic, or OpenRouter)
 // and stores output in ai_suggestions for the conversation
+
 routerAdd(
   'POST',
   '/backend/v1/copilot/analyze',
@@ -68,16 +70,121 @@ routerAdd(
         '```',
       ].join('\n')
 
-      let agentResult
+      // Resolve AI Provider config for this tenant
+      let provider = 'skip_agent'
+      let model = 'commercial-copilot'
+      let customKey = ''
+      let customEndpoint = ''
+
       try {
-        agentResult = $ai.agent('commercial-copilot').chat({
-          user_id: userId,
-          message: promptMessage,
-        })
-      } catch (agentErr) {
-        // Fallback if AI gateway is warming up or unavailable
-        agentResult = {
-          content: JSON.stringify({
+        const profile = $app.findFirstRecordByData('user_profiles', 'user', userId)
+        const orgId = profile.getString('organization_id') || 'org_ademicon_default'
+        const aiConfigs = $app.findRecordsByFilter(
+          'ai_configs',
+          'organization_id = "' + orgId + '" && is_active = true',
+          '-created',
+          1,
+          0,
+        )
+        if (aiConfigs.length > 0) {
+          const cfg = aiConfigs[0]
+          provider = cfg.getString('provider') || 'skip_agent'
+          model = cfg.getString('model') || 'commercial-copilot'
+          customKey = cfg.getString('api_key') || ''
+          customEndpoint = cfg.getString('custom_endpoint') || ''
+        }
+      } catch (_) {}
+
+      let rawContent = ''
+
+      // Execute through pluggable provider
+      if (provider === 'openai' && customKey) {
+        try {
+          const res = $http.send({
+            url: (customEndpoint || 'https://api.openai.com/v1') + '/chat/completions',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + customKey,
+            },
+            body: JSON.stringify({
+              model: model || 'gpt-4o',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'Você é o Copiloto Comercial IA especialista em vendas e negociações.',
+                },
+                { role: 'user', content: promptMessage },
+              ],
+              temperature: 0.3,
+            }),
+            timeout: 20,
+          })
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            rawContent = res.json?.choices?.[0]?.message?.content || ''
+          }
+        } catch (_) {}
+      } else if (provider === 'anthropic' && customKey) {
+        try {
+          const res = $http.send({
+            url: 'https://api.anthropic.com/v1/messages',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': customKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: model || 'claude-3-5-sonnet-20241022',
+              max_tokens: 1500,
+              system: 'Você é o Copiloto Comercial IA especialista em vendas e negociações.',
+              messages: [{ role: 'user', content: promptMessage }],
+            }),
+            timeout: 20,
+          })
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            rawContent = res.json?.content?.[0]?.text || ''
+          }
+        } catch (_) {}
+      } else if (provider === 'custom_openrouter' && customKey) {
+        try {
+          const ep = customEndpoint || 'https://openrouter.ai/api/v1'
+          const res = $http.send({
+            url: ep + '/chat/completions',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + customKey,
+            },
+            body: JSON.stringify({
+              model: model || 'deepseek/deepseek-chat',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'Você é o Copiloto Comercial IA especialista em vendas e negociações.',
+                },
+                { role: 'user', content: promptMessage },
+              ],
+            }),
+            timeout: 20,
+          })
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            rawContent = res.json?.choices?.[0]?.message?.content || ''
+          }
+        } catch (_) {}
+      }
+
+      // Default or fallback to native Skip Cloud Agent 'commercial-copilot'
+      if (!rawContent) {
+        try {
+          const agentResult = $ai.agent('commercial-copilot').chat({
+            user_id: userId,
+            message: promptMessage,
+          })
+          rawContent = agentResult.content || ''
+        } catch (agentErr) {
+          // Rule-based fallback if offline
+          rawContent = JSON.stringify({
             commercial_stage: conv.getString('commercial_stage') || 'oportunidade',
             type: 'advance_to_meeting',
             next_best_action:
@@ -99,13 +206,12 @@ routerAdd(
                 contactName +
                 '! Antes de alinharmos os horários, você prefere um encontro presencial ou por videoconferência?',
             ],
-          }),
+          })
         }
       }
 
       // Parse JSON from agent content
       let parsedData = null
-      const rawContent = agentResult.content || ''
       try {
         const match = rawContent.match(/\{[\s\S]*\}/)
         if (match) {
@@ -168,6 +274,8 @@ routerAdd(
         ok: true,
         suggestion: suggRec,
         parsed: parsedData,
+        provider_used: provider,
+        model_used: model,
       })
     } catch (err) {
       return e.json(500, { error: err.message || 'Failed to analyze conversation' })

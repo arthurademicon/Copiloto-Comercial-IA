@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T16:32:23.254Z",
+  "generatedAt": "2026-09-30T12:43:44.838Z",
   "collections": [
     {
       "name": "users",
@@ -1612,6 +1612,406 @@
       "indexes": [
         "CREATE INDEX idx_metrics_metric ON usage_metrics (metric)",
         "CREATE INDEX idx_metrics_created ON usage_metrics (created DESC)"
+      ]
+    },
+    {
+      "name": "integration_configs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "base_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "api_key",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "instance_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "settings",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_integ_cfg_org_prov ON integration_configs (organization_id, provider)"
+      ]
+    },
+    {
+      "name": "ai_configs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "provider",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["skip_agent", "openai", "anthropic", "custom_openrouter"]
+        },
+        {
+          "name": "model",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "temperature",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "api_key",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "custom_endpoint",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "system_prompt_override",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_ai_cfg_org ON ai_configs (organization_id)"]
+    },
+    {
+      "name": "broadcast_campaigns",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "message_template",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["draft", "scheduled", "running", "paused", "completed", "cancelled"]
+        },
+        {
+          "name": "audience_filter",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "total_recipients",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "sent_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "delivered_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "read_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "error_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "replied_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "scheduled_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "min_interval_seconds",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "max_interval_seconds",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "requires_manual_approval",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_campaigns_org ON broadcast_campaigns (organization_id)",
+        "CREATE INDEX idx_campaigns_status ON broadcast_campaigns (status)"
+      ]
+    },
+    {
+      "name": "broadcast_recipients",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "campaign",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "broadcast_campaigns"
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "recipient_phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "recipient_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "rendered_message",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "pending",
+            "waiting_approval",
+            "approved",
+            "sending",
+            "sent",
+            "delivered",
+            "read",
+            "error",
+            "cancelled"
+          ]
+        },
+        {
+          "name": "provider_event_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "error_details",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "sent_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "delivered_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "read_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "replied_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "retry_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_recipients_campaign ON broadcast_recipients (campaign)",
+        "CREATE INDEX idx_recipients_status ON broadcast_recipients (status)"
       ]
     }
   ]
