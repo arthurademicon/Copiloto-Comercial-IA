@@ -140,10 +140,17 @@ routerAdd(
       let dailyLimit = parseInt(body.daily_limit, 10) || 50
       if (dailyLimit < 1) dailyLimit = 1
 
+      let minInterval = parseInt(body.min_interval_seconds, 10)
+      if (isNaN(minInterval) || minInterval < 5) minInterval = 20
+
+      let maxInterval = parseInt(body.max_interval_seconds, 10)
+      if (isNaN(maxInterval) || maxInterval < minInterval) {
+        maxInterval = Math.max(minInterval, 45)
+      }
+
       const defaultTemplate =
         'Olá, bom dia! Tudo bem? Esse é o número da {nome do estabelecimento}?'
       const messageTemplate = (body.message_template || defaultTemplate).trim()
-
       if (!niche || !location) {
         return e.badRequestError('Nicho e Local são obrigatórios para iniciar a prospecção.')
       }
@@ -174,6 +181,8 @@ routerAdd(
       pList.set('location', location)
       pList.set('target_volume', targetVolume)
       pList.set('daily_limit', dailyLimit)
+      pList.set('min_interval_seconds', minInterval)
+      pList.set('max_interval_seconds', maxInterval)
       pList.set('status', 'collecting')
       pList.set('total_collected', 0)
       pList.set('valid_phone_count', 0)
@@ -217,7 +226,6 @@ routerAdd(
                   rating: item.rating || 0,
                 })
               }
-
               // Check if next_page_token exists and we still need more
               if (res.json.next_page_token && rawPlaces.length < targetVolume) {
                 // Places API requires a short pause before next_page_token is valid
@@ -561,11 +569,10 @@ routerAdd(
           camp.set('read_count', 0)
           camp.set('error_count', 0)
           camp.set('replied_count', 0)
-          camp.set('min_interval_seconds', 15)
-          camp.set('max_interval_seconds', 35)
+          camp.set('min_interval_seconds', minInterval)
+          camp.set('max_interval_seconds', maxInterval)
           camp.set('requires_manual_approval', requiresApproval)
           $app.save(camp)
-
           linkedCampaignId = camp.id
 
           // Create broadcast recipients for each eligible prospect

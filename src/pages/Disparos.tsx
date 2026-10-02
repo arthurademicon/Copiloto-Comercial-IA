@@ -46,8 +46,9 @@ export default function Disparos() {
     'Olá {{primeiro_nome}}, tudo bem? Passando para compartilhar uma nova oportunidade que se encaixa no seu perfil.',
   )
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [minInterval, setMinInterval] = useState(15)
-  const [maxInterval, setMaxInterval] = useState(30)
+  const [minInterval, setMinInterval] = useState(20)
+  const [maxInterval, setMaxInterval] = useState(45)
+  const [intervalError, setIntervalError] = useState<string | null>(null)
   const [scheduledAt, setScheduledAt] = useState('')
   const [manualApproval, setManualApproval] = useState(profile?.autonomy_mode === 'copilot')
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -103,6 +104,28 @@ export default function Disparos() {
       toast({ title: 'Preencha título e mensagem', variant: 'destructive' })
       return
     }
+
+    if (minInterval < 5) {
+      setIntervalError('O intervalo mínimo deve ser de no mínimo 5 segundos.')
+      toast({
+        title: 'Intervalo inválido',
+        description: 'O mínimo deve ser ≥ 5 segundos.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (maxInterval < minInterval) {
+      setIntervalError('O intervalo máximo deve ser maior ou igual ao mínimo.')
+      toast({
+        title: 'Intervalo inválido',
+        description: 'O intervalo máximo deve ser maior ou igual ao intervalo mínimo.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIntervalError(null)
     setCreating(true)
     try {
       const res = await broadcastService.createCampaign({
@@ -110,8 +133,8 @@ export default function Disparos() {
         message_template: template,
         audience_filter: { category: categoryFilter },
         scheduled_at: scheduledAt || null,
-        min_interval_seconds: minInterval,
-        max_interval_seconds: maxInterval,
+        min_interval_seconds: Number(minInterval),
+        max_interval_seconds: Number(maxInterval),
         requires_manual_approval: manualApproval,
       })
       if (res.ok && res.campaign) {
@@ -145,7 +168,9 @@ export default function Disparos() {
       } else {
         toast({
           title: `Lote disparado (${res.processed} mensagens)`,
-          description: 'Intervalos com jitter aplicados com segurança anti-ban.',
+          description: res.last_interval_seconds
+            ? `Intervalo sorteado neste envio: ${res.last_interval_seconds}s (faixa ${selectedCampaign?.min_interval_seconds || 20}–${selectedCampaign?.max_interval_seconds || 45}s).`
+            : `Intervalo sorteado randomicamente por envio (${selectedCampaign?.min_interval_seconds || 20}–${selectedCampaign?.max_interval_seconds || 45}s).`,
         })
       }
       await loadCampaigns()
@@ -377,10 +402,16 @@ export default function Disparos() {
                       {selectedCampaign.status}
                     </Badge>
                   </div>
-                  <p className="text-xs text-[#6B7280] mt-0.5">
-                    Throttling anti-ban configurado: {selectedCampaign.min_interval_seconds}s a{' '}
-                    {selectedCampaign.max_interval_seconds}s entre mensagens.
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-[#6B7280]">Intervalo aleatório por mensagem:</p>
+                    <Badge
+                      variant="secondary"
+                      className="text-[11px] font-mono bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    >
+                      Intervalo: {selectedCampaign.min_interval_seconds || 20}–
+                      {selectedCampaign.max_interval_seconds || 45}s
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -660,43 +691,102 @@ export default function Disparos() {
               {/* Anti-ban Throttling config */}
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <Sliders className="w-3.5 h-3.5 text-indigo-600" />
-                  Controle Anti-Ban & Autonomia da IA
+                  <Sliders className="w-3.5 h-3.5 text-[#4F46E5]" />
+                  Controle de Intervalo & Autonomia da IA
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="text-[11px] text-[#4B5563]">
-                      Intervalo Mínimo (segundos)
+
+                {/* Campos Min e Max lado a lado */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-[#374151]">
+                      Intervalo mínimo entre envios (s)
                     </label>
-                    <Input
-                      type="number"
-                      min={5}
-                      value={minInterval}
-                      onChange={(e) => setMinInterval(Number(e.target.value))}
-                      className="text-xs h-8 bg-white mt-1"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={5}
+                        value={minInterval}
+                        onChange={(e) => {
+                          const val = Number(e.target.value)
+                          setMinInterval(val)
+                          if (val < 5) {
+                            setIntervalError('O intervalo mínimo deve ser de no mínimo 5 segundos.')
+                          } else if (maxInterval < val) {
+                            setIntervalError(
+                              'O intervalo máximo deve ser maior ou igual ao mínimo.',
+                            )
+                          } else {
+                            setIntervalError(null)
+                          }
+                        }}
+                        className="text-xs h-9 pr-18 bg-white rounded-xl border-[#E5E7EB]"
+                      />
+                      <span className="absolute right-3 top-2.5 text-[11px] text-[#9CA3AF] pointer-events-none">
+                        segundos
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[11px] text-[#4B5563]">Intervalo Máximo (jitter)</label>
-                    <Input
-                      type="number"
-                      min={10}
-                      value={maxInterval}
-                      onChange={(e) => setMaxInterval(Number(e.target.value))}
-                      className="text-xs h-8 bg-white mt-1"
-                    />
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-[#374151]">
+                      Intervalo máximo entre envios (s)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={minInterval}
+                        value={maxInterval}
+                        onChange={(e) => {
+                          const val = Number(e.target.value)
+                          setMaxInterval(val)
+                          if (val < minInterval) {
+                            setIntervalError(
+                              'O intervalo máximo deve ser maior ou igual ao mínimo.',
+                            )
+                          } else if (minInterval < 5) {
+                            setIntervalError('O intervalo mínimo deve ser de no mínimo 5 segundos.')
+                          } else {
+                            setIntervalError(null)
+                          }
+                        }}
+                        className={cn(
+                          'text-xs h-9 pr-18 bg-white rounded-xl border-[#E5E7EB]',
+                          intervalError && 'border-rose-400 focus-visible:ring-rose-400',
+                        )}
+                      />
+                      <span className="absolute right-3 top-2.5 text-[11px] text-[#9CA3AF] pointer-events-none">
+                        segundos
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
+                {/* Inline Error */}
+                {intervalError && (
+                  <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                    {intervalError}
+                  </p>
+                )}
+
+                {/* Helper text */}
+                <p className="text-[11px] text-[#6B7280] leading-relaxed">
+                  O sistema sorteia um intervalo entre o mínimo e o máximo a cada envio para simular
+                  comportamento humano.
+                </p>
+
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-200/80">
                   <input
                     type="checkbox"
                     id="chkApproval"
                     checked={manualApproval}
                     onChange={(e) => setManualApproval(e.target.checked)}
-                    className="rounded text-indigo-600 w-4 h-4"
+                    className="rounded text-indigo-600 w-4 h-4 cursor-pointer"
                   />
-                  <label htmlFor="chkApproval" className="text-xs text-slate-700 font-medium">
+                  <label
+                    htmlFor="chkApproval"
+                    className="text-xs text-slate-700 font-medium cursor-pointer"
+                  >
                     Exigir aprovação humana de cada mensagem antes do disparo (Recomendado - Modo 1)
                   </label>
                 </div>

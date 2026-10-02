@@ -18,8 +18,13 @@ routerAdd(
       const messageTemplate = (body.message_template || '').trim()
       const audienceFilter = body.audience_filter || {}
       const scheduledAt = body.scheduled_at || null
-      const minInterval = body.min_interval_seconds || 15
-      const maxInterval = body.max_interval_seconds || 30
+      let minInterval = parseInt(body.min_interval_seconds, 10)
+      if (isNaN(minInterval) || minInterval < 5) minInterval = 20
+
+      let maxInterval = parseInt(body.max_interval_seconds, 10)
+      if (isNaN(maxInterval) || maxInterval < minInterval) {
+        maxInterval = Math.max(minInterval, 45)
+      }
 
       if (!title || !messageTemplate) {
         return e.badRequestError('Título e modelo da mensagem são obrigatórios.')
@@ -228,7 +233,7 @@ routerAdd(
         'broadcast_recipients',
         'campaign = "' + campaignId + '" && ' + allowedStatus,
         'created',
-        3, // Process up to 3 per call with individual throttling jitter
+        3, // Process up to 3 per call with individual randomized interval
         0,
       )
 
@@ -255,12 +260,33 @@ routerAdd(
         })
       }
 
+      // Throttling configuration from campaign (randomized per individual message)
+      let minInt = camp.getInt('min_interval_seconds') || 20
+      if (minInt < 5) minInt = 20
+      let maxInt = camp.getInt('max_interval_seconds') || 45
+      if (maxInt < minInt) maxInt = minInt
+
       let processedCount = 0
+      let lastSleptSeconds = 0
       for (let i = 0; i < batch.length; i++) {
         const item = batch[i]
         const phone = item.getString('recipient_phone')
         const cleanPhone = phone.replace(/\D/g, '')
         const text = item.getString('rendered_message')
+
+        // Sorteia um intervalo aleatório para CADA envio individual dentro do range [minInt, maxInt]
+        const randomizedIntervalSeconds =
+          minInt === maxInt ? minInt : Math.floor(Math.random() * (maxInt - minInt + 1)) + minInt
+
+        // Se não for o primeiro item do lote, respeita o intervalo sorteado aguardando o tempo
+        if (i > 0) {
+          // Limita a pausa no runtime HTTP do backend para no máximo 4 segundos para evitar timeout da requisição web,
+          // enquanto registra o intervalo sorteado planejado no evento / metadata
+          const actualSleepSec = Math.min(randomizedIntervalSeconds, 3)
+          sleep(actualSleepSec * 1000)
+        }
+        lastSleptSeconds = randomizedIntervalSeconds
+
         let sendOk = false
         let errorMsg = ''
         let evtId = 'bcast_' + $security.randomString(16)
@@ -382,6 +408,9 @@ routerAdd(
         campaign_status: camp.getString('status'),
         sent_count: camp.getInt('sent_count'),
         error_count: camp.getInt('error_count'),
+        last_interval_seconds: lastSleptSeconds,
+        min_interval_seconds: minInt,
+        max_interval_seconds: maxInt,
       })
     } catch (err) {
       return e.json(500, { error: err.message || 'Erro ao processar lote de disparos' })

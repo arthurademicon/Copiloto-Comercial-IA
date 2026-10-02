@@ -391,6 +391,8 @@ export interface ProspectList {
   replied_count: number
   is_demo: boolean
   message_template: string
+  min_interval_seconds?: number
+  max_interval_seconds?: number
   campaign?: string
   created: string
   updated: string

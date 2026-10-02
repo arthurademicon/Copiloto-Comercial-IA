@@ -63,6 +63,9 @@ export default function Prospeccao() {
   const [location, setLocation] = useState('')
   const [targetVolume, setTargetVolume] = useState('20')
   const [dailyLimit, setDailyLimit] = useState('50')
+  const [minInterval, setMinInterval] = useState('20')
+  const [maxInterval, setMaxInterval] = useState('45')
+  const [intervalError, setIntervalError] = useState<string | null>(null)
   const [messageTemplate, setMessageTemplate] = useState(
     'Olá, bom dia! Tudo bem? Esse é o número da {nome do estabelecimento}?',
   )
@@ -149,7 +152,30 @@ export default function Prospeccao() {
 
     const volume = parseInt(targetVolume, 10) || 10
     const limit = parseInt(dailyLimit, 10) || 50
+    const minInt = parseInt(minInterval, 10)
+    const maxInt = parseInt(maxInterval, 10)
 
+    if (isNaN(minInt) || minInt < 5) {
+      setIntervalError('O intervalo mínimo entre envios deve ser de pelo menos 5 segundos.')
+      toast({
+        title: 'Intervalo inválido',
+        description: 'O intervalo mínimo deve ser ≥ 5 segundos.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (isNaN(maxInt) || maxInt < minInt) {
+      setIntervalError('O intervalo máximo deve ser maior ou igual ao intervalo mínimo.')
+      toast({
+        title: 'Intervalo inválido',
+        description: 'O intervalo máximo deve ser maior ou igual ao mínimo.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIntervalError(null)
     setStarting(true)
     try {
       const res = await prospectingService.startProspecting({
@@ -157,6 +183,8 @@ export default function Prospeccao() {
         location: location.trim(),
         target_volume: volume,
         daily_limit: limit,
+        min_interval_seconds: minInt,
+        max_interval_seconds: maxInt,
         message_template: messageTemplate.trim(),
       })
 
@@ -209,7 +237,9 @@ export default function Prospeccao() {
       } else {
         toast({
           title: `Lote disparado (${res.processed} mensagens)`,
-          description: 'Intervalos e simulação de digitação anti-ban aplicados.',
+          description: res.last_interval_seconds
+            ? `Intervalo sorteado neste envio: ${res.last_interval_seconds}s (faixa ${selectedList?.min_interval_seconds || 20}–${selectedList?.max_interval_seconds || 45}s).`
+            : `Intervalo sorteado randomicamente por envio (${selectedList?.min_interval_seconds || 20}–${selectedList?.max_interval_seconds || 45}s).`,
         })
       }
 
@@ -479,10 +509,26 @@ export default function Prospeccao() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-[#6B7280] mt-1">
-                    Meta de volume: <strong>{selectedList.target_volume} estabelecimentos</strong> |
-                    Limite diário: <strong>{selectedList.daily_limit || 50} envios/dia</strong>
-                  </p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <p className="text-xs text-[#6B7280]">
+                      Meta: <strong>{selectedList.target_volume} estabelecimentos</strong> | Limite
+                      diário: <strong>{selectedList.daily_limit || 50} envios/dia</strong>
+                    </p>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] font-mono bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    >
+                      Intervalo:{' '}
+                      {selectedList.min_interval_seconds ||
+                        selectedCampaign?.min_interval_seconds ||
+                        20}
+                      –
+                      {selectedList.max_interval_seconds ||
+                        selectedCampaign?.max_interval_seconds ||
+                        45}
+                      s
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -582,8 +628,21 @@ export default function Prospeccao() {
                 <p className="text-xs text-[#111827] font-mono bg-white p-2.5 rounded-xl border border-[#E5E7EB] whitespace-pre-wrap">
                   {selectedList.message_template}
                 </p>
-                <div className="flex items-center justify-between text-[10px] text-[#6B7280] pt-1">
-                  <span>Anti-ban: Throttling de 15s a 35s com simulação de digitação</span>
+                <div className="flex items-center justify-between text-[10px] text-[#6B7280] pt-1 flex-wrap gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Intervalo sorteado por envio:{' '}
+                    <strong>
+                      {selectedList.min_interval_seconds ||
+                        selectedCampaign?.min_interval_seconds ||
+                        20}
+                      s a{' '}
+                      {selectedList.max_interval_seconds ||
+                        selectedCampaign?.max_interval_seconds ||
+                        45}
+                      s
+                    </strong>
+                  </span>
                   <span>
                     Modo Autonomia:{' '}
                     {profile?.autonomy_mode === 'copilot'
@@ -826,6 +885,95 @@ export default function Prospeccao() {
                 />
                 <span className="text-[10px] text-[#6B7280]">Prevenção de bloqueio</span>
               </div>
+            </div>
+
+            {/* Configuração de Intervalo de Disparo (Min e Max lado a lado) */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                <ShieldCheck className="w-4 h-4 text-[#4F46E5]" />
+                Intervalo de Disparo Anti-Ban (Randomizado)
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-[#374151]">
+                    Intervalo mínimo entre envios (s) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="5"
+                      value={minInterval}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setMinInterval(val)
+                        const nMin = parseInt(val, 10)
+                        const nMax = parseInt(maxInterval, 10)
+                        if (isNaN(nMin) || nMin < 5) {
+                          setIntervalError('O intervalo mínimo deve ser de no mínimo 5 segundos.')
+                        } else if (!isNaN(nMax) && nMax < nMin) {
+                          setIntervalError('O intervalo máximo deve ser maior ou igual ao mínimo.')
+                        } else {
+                          setIntervalError(null)
+                        }
+                      }}
+                      required
+                      className="text-xs h-9 pr-18 bg-white rounded-xl border-[#E5E7EB]"
+                    />
+                    <span className="absolute right-3 top-2 text-[11px] text-[#9CA3AF] pointer-events-none">
+                      segundos
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-[#374151]">
+                    Intervalo máximo entre envios (s) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={minInterval || '5'}
+                      value={maxInterval}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setMaxInterval(val)
+                        const nMax = parseInt(val, 10)
+                        const nMin = parseInt(minInterval, 10)
+                        if (!isNaN(nMax) && !isNaN(nMin) && nMax < nMin) {
+                          setIntervalError('O intervalo máximo deve ser maior ou igual ao mínimo.')
+                        } else if (isNaN(nMin) || nMin < 5) {
+                          setIntervalError('O intervalo mínimo deve ser de no mínimo 5 segundos.')
+                        } else {
+                          setIntervalError(null)
+                        }
+                      }}
+                      required
+                      className={cn(
+                        'text-xs h-9 pr-18 bg-white rounded-xl border-[#E5E7EB]',
+                        intervalError && 'border-rose-400 focus-visible:ring-rose-400',
+                      )}
+                    />
+                    <span className="absolute right-3 top-2 text-[11px] text-[#9CA3AF] pointer-events-none">
+                      segundos
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Erro inline */}
+              {intervalError && (
+                <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                  {intervalError}
+                </p>
+              )}
+
+              {/* Helper text curto */}
+              <p className="text-[11px] text-[#6B7280] leading-relaxed">
+                O sistema sorteia um intervalo entre o mínimo e o máximo a cada envio para simular
+                comportamento humano.
+              </p>
             </div>
 
             {/* Template de Mensagem Inicial */}

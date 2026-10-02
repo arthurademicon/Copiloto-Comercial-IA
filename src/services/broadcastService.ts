@@ -90,6 +90,9 @@ export const broadcastService = {
     campaign_status?: string
     sent_count?: number
     error_count?: number
+    last_interval_seconds?: number
+    min_interval_seconds?: number
+    max_interval_seconds?: number
     message?: string
   }> {
     const res = await fetch(

@@ -60,6 +60,8 @@ export const prospectingService = {
     location: string
     target_volume: number
     daily_limit?: number
+    min_interval_seconds?: number
+    max_interval_seconds?: number
     message_template?: string
   }): Promise<{
     ok: boolean
