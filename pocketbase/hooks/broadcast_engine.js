@@ -335,6 +335,31 @@ routerAdd(
           // Increment sent count
           const currentSent = camp.getInt('sent_count') || 0
           camp.set('sent_count', currentSent + 1)
+
+          // Update linked prospect if exists
+          try {
+            const pItems = $app.findRecordsByFilter(
+              'prospects',
+              'contact = "' + item.getString('contact') + '"',
+              '-created',
+              1,
+              0,
+            )
+            if (pItems.length > 0) {
+              const pr = pItems[0]
+              pr.set('status', 'enviado')
+              pr.set('dispatched_at', new Date().toISOString())
+              $app.save(pr)
+
+              const pListId = pr.getString('list')
+              if (pListId) {
+                const pList = $app.findFirstRecordByData('prospect_lists', 'id', pListId)
+                const curDisp = pList.getInt('dispatched_count') || 0
+                pList.set('dispatched_count', curDisp + 1)
+                $app.save(pList)
+              }
+            }
+          } catch (_) {}
         } else {
           const retries = (item.getInt('retry_count') || 0) + 1
           item.set('retry_count', retries)

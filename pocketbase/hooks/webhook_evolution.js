@@ -214,6 +214,31 @@ routerAdd('POST', '/backend/v1/webhook/evolution', (e) => {
             const replied = camp.getInt('replied_count') || 0
             camp.set('replied_count', replied + 1)
             $app.save(camp)
+
+            // Also update linked prospect and prospect_list if this was from a prospecting list
+            try {
+              const pItems = $app.findRecordsByFilter(
+                'prospects',
+                'contact = "' + contactRecord.id + '"',
+                '-created',
+                1,
+                0,
+              )
+              if (pItems.length > 0) {
+                const pr = pItems[0]
+                pr.set('status', 'respondido')
+                pr.set('replied_at', new Date().toISOString())
+                $app.save(pr)
+
+                const pListId = pr.getString('list')
+                if (pListId) {
+                  const pList = $app.findFirstRecordByData('prospect_lists', 'id', pListId)
+                  const currentRep = pList.getInt('replied_count') || 0
+                  pList.set('replied_count', currentRep + 1)
+                  $app.save(pList)
+                }
+              }
+            } catch (_) {}
           }
         }
       } catch (_) {}

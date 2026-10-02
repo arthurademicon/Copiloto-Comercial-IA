@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T12:43:44.838Z",
+  "generatedAt": "2026-10-02T13:43:04.123Z",
   "collections": [
     {
       "name": "users",
@@ -2012,6 +2012,283 @@
       "indexes": [
         "CREATE INDEX idx_recipients_campaign ON broadcast_recipients (campaign)",
         "CREATE INDEX idx_recipients_status ON broadcast_recipients (status)"
+      ]
+    },
+    {
+      "name": "prospect_lists",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "niche",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "target_volume",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "daily_limit",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["collecting", "ready", "dispatching", "paused", "completed", "failed"]
+        },
+        {
+          "name": "total_collected",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valid_phone_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "invalid_phone_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "duplicates_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "dispatched_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "replied_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_demo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "message_template",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "campaign",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "broadcast_campaigns"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_prospect_lists_org ON prospect_lists (organization_id)",
+        "CREATE INDEX idx_prospect_lists_consultant ON prospect_lists (consultant)",
+        "CREATE INDEX idx_prospect_lists_status ON prospect_lists (status)"
+      ]
+    },
+    {
+      "name": "prospects",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "organization_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "list",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "prospect_lists"
+        },
+        {
+          "name": "consultant",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "place_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "establishment_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "raw_phone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "formatted_phone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "google_rating",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "pendente",
+            "na_fila",
+            "enviado",
+            "respondido",
+            "falha",
+            "sem_whatsapp_valido",
+            "duplicado"
+          ]
+        },
+        {
+          "name": "rendered_message",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contact",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "contacts"
+        },
+        {
+          "name": "error_details",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "dispatched_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "replied_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_demo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_prospects_list ON prospects (list)",
+        "CREATE INDEX idx_prospects_phone ON prospects (formatted_phone)",
+        "CREATE INDEX idx_prospects_status ON prospects (status)"
       ]
     }
   ]

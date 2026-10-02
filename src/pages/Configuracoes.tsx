@@ -24,8 +24,16 @@ import {
 import { useAuth } from '@/services/authContext'
 import { messagingAdapter } from '@/services/messagingAdapter'
 import { aiProviderService, type AvailableAiProvider } from '@/services/aiProviderService'
+import { prospectingService } from '@/services/prospectingService'
 import pb from '@/lib/pocketbase/client'
-import type { AutonomyMode, WhatsappStatus, EvolutionConfigStatus, AiConfig } from '@/types'
+import type {
+  AutonomyMode,
+  WhatsappStatus,
+  EvolutionConfigStatus,
+  AiConfig,
+  GooglePlacesConfig,
+} from '@/types'
+import { MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -67,6 +75,11 @@ export default function Configuracoes() {
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(
     Boolean(profile?.google_calendar_connected),
   )
+
+  // Google Places API state (Prospecção)
+  const [googlePlacesConfig, setGooglePlacesConfig] = useState<GooglePlacesConfig | null>(null)
+  const [googlePlacesApiKey, setGooglePlacesApiKey] = useState('')
+  const [savingGooglePlaces, setSavingGooglePlaces] = useState(false)
 
   // Business hours state
   const defaultHours = [
@@ -124,6 +137,16 @@ export default function Configuracoes() {
         setAvailableAiProviders(aiData.available_providers)
         if (aiData.config.custom_endpoint) {
           setAiCustomEndpoint(aiData.config.custom_endpoint)
+        }
+      } catch {
+        /* intentionally ignored */
+      }
+
+      try {
+        const placesData = await prospectingService.getConfig()
+        setGooglePlacesConfig(placesData)
+        if (placesData.has_api_key) {
+          setGooglePlacesApiKey(placesData.api_key_masked)
         }
       } catch {
         /* intentionally ignored */
@@ -599,6 +622,115 @@ export default function Configuracoes() {
                   )}
                   Salvar Conexão Evolution
                 </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Google Places API Card (Módulo de Prospecção) */}
+          <div className="bg-white rounded-3xl p-6 border border-[#E5E7EB] shadow-[0_1px_2px_rgba(16,24,40,0.04)] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#111827] flex items-center gap-2">
+                    Google Maps / Places API (Módulo de Prospecção)
+                  </h3>
+                  <p className="text-xs text-[#6B7280]">
+                    Extração automática de estabelecimentos comerciais, telefones, endereços e sites
+                    por nicho e região.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {googlePlacesConfig?.has_api_key ? (
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-2.5 py-0.5"
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1 inline" />
+                    Chave Ativa ({googlePlacesConfig.source === 'env' ? 'Servidor' : 'Banco'})
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 border-amber-200 text-xs px-2.5 py-0.5"
+                  >
+                    Modo Demonstração (Sem Chave)
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] text-xs text-[#374151] space-y-2">
+              <div className="flex items-center justify-between">
+                <span>Status da Conexão:</span>
+                <span className="font-semibold text-[#111827]">
+                  {googlePlacesConfig?.has_api_key
+                    ? 'Pronto para consultas reais ao Google Places'
+                    : 'Modo Demonstração com estabelecimentos realistas e deduplicação'}
+                </span>
+              </div>
+              <p className="text-[#6B7280] leading-relaxed">
+                A chave do Google Maps é armazenada com segurança no backend e{' '}
+                <strong>nunca é exposta no frontend</strong>. Sem chave configurada, a prospecção
+                roda com dados de exemplo estruturados em formato idêntico.
+              </p>
+            </div>
+
+            {/* Google Places Form (Gestores e Admins) */}
+            <div className="pt-2 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-[#374151]">
+                  Google Maps API Key (Places API habilitada)
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={googlePlacesApiKey}
+                    onChange={(e) => setGooglePlacesApiKey(e.target.value)}
+                    className="text-xs h-9 rounded-xl bg-[#F9FAFB] flex-1 font-mono"
+                  />
+                  <Button
+                    onClick={async () => {
+                      setSavingGooglePlaces(true)
+                      try {
+                        const res = await prospectingService.saveConfig({
+                          apiKey: googlePlacesApiKey,
+                        })
+                        if (res.ok) {
+                          toast({ title: 'Configuração do Google Places salva com sucesso!' })
+                          const updated = await prospectingService.getConfig()
+                          setGooglePlacesConfig(updated)
+                          if (updated.has_api_key) setGooglePlacesApiKey(updated.api_key_masked)
+                        } else {
+                          toast({
+                            title: res.error || 'Erro ao salvar chave',
+                            variant: 'destructive',
+                          })
+                        }
+                      } finally {
+                        setSavingGooglePlaces(false)
+                      }
+                    }}
+                    disabled={savingGooglePlaces}
+                    className="h-9 px-4 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-semibold gap-1.5"
+                  >
+                    {savingGooglePlaces ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    Salvar Chave
+                  </Button>
+                </div>
+                <span className="text-[10px] text-[#6B7280]">
+                  Permissões recomendadas no Google Cloud Console:{' '}
+                  <em>Places API (New ou Text Search)</em>.
+                </span>
               </div>
             </div>
           </div>

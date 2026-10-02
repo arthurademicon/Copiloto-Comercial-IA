@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Info,
   Send,
+  Compass,
 } from 'lucide-react'
 import { useAuth } from '@/services/authContext'
 import { Badge } from '@/components/ui/badge'
@@ -81,6 +82,7 @@ export default function Layout() {
     { label: 'Pipeline', path: '/pipeline', icon: Kanban },
     { label: 'Follow-ups', path: '/followups', icon: Clock },
     { label: 'Agenda', path: '/agenda', icon: Calendar },
+    { label: 'Prospecção', path: '/prospeccao', icon: Compass },
     { label: 'Disparos', path: '/disparos', icon: Send },
     { label: 'Copiloto', path: '/copiloto', icon: Sparkles },
     { label: 'Conhecimento', path: '/conhecimento', icon: BookOpen },

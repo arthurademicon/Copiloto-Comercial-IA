@@ -356,3 +356,79 @@ export interface AlertItem {
   timestamp: string
   actionUrl?: string
 }
+
+export type ProspectStatus =
+  | 'pendente'
+  | 'na_fila'
+  | 'enviado'
+  | 'respondido'
+  | 'falha'
+  | 'sem_whatsapp_valido'
+  | 'duplicado'
+
+export type ProspectListStatus =
+  | 'collecting'
+  | 'ready'
+  | 'dispatching'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+
+export interface ProspectList {
+  id: string
+  organization_id: string
+  consultant: string
+  niche: string
+  location: string
+  target_volume: number
+  daily_limit: number
+  status: ProspectListStatus
+  total_collected: number
+  valid_phone_count: number
+  invalid_phone_count: number
+  duplicates_count: number
+  dispatched_count: number
+  replied_count: number
+  is_demo: boolean
+  message_template: string
+  campaign?: string
+  created: string
+  updated: string
+  expand?: {
+    campaign?: BroadcastCampaign
+  }
+}
+
+export interface Prospect {
+  id: string
+  organization_id: string
+  list: string
+  consultant: string
+  place_id?: string
+  establishment_name: string
+  raw_phone?: string
+  formatted_phone?: string
+  address?: string
+  website?: string
+  google_rating?: number
+  status: ProspectStatus
+  rendered_message?: string
+  contact?: string
+  error_details?: string
+  dispatched_at?: string
+  replied_at?: string
+  is_demo: boolean
+  created: string
+  updated: string
+  expand?: {
+    list?: ProspectList
+    contact?: Contact
+  }
+}
+
+export interface GooglePlacesConfig {
+  has_api_key: boolean
+  api_key_masked: string
+  is_demo: boolean
+  source: 'database' | 'env' | 'demo'
+}
